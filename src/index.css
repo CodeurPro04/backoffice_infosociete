@@ -1,0 +1,25 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700&family=Sora:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-transparent;
+  }
+
+  body {
+    @apply bg-sand text-slate antialiased;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply rounded-3xl border border-white/50 bg-white/80 shadow-card backdrop-blur;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/70 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate/70;
+  }
+}
