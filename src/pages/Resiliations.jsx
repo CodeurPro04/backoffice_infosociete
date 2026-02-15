@@ -2,6 +2,80 @@
 import { fetchAdminSubmissions } from '../api.js'
 import { formatDateTime } from '../utils.js'
 
+function getStripeStatusMeta(status) {
+  const normalized = String(status || 'received').toLowerCase()
+
+  if (normalized === 'cancelled' || normalized === 'canceled') {
+    return {
+      label: 'Abonnement annulé',
+      raw: normalized,
+      className: 'bg-emerald-100 text-emerald-700',
+    }
+  }
+
+  if (normalized === 'scheduled_cancellation') {
+    return {
+      label: 'Annulation programmée',
+      raw: normalized,
+      className: 'bg-emerald-100 text-emerald-700',
+    }
+  }
+
+  if (normalized === 'no_customer') {
+    return {
+      label: 'Aucun client Stripe',
+      raw: normalized,
+      className: 'bg-slate-100 text-slate-700',
+    }
+  }
+
+  if (normalized === 'no_cancellable_subscription') {
+    return {
+      label: 'Rien à résilier',
+      raw: normalized,
+      className: 'bg-blue-100 text-blue-700',
+    }
+  }
+
+  if (normalized === 'no_subscription_linked') {
+    return {
+      label: 'Aucun abonnement lié',
+      raw: normalized,
+      className: 'bg-slate-100 text-slate-700',
+    }
+  }
+
+  if (normalized === 'stripe_not_configured') {
+    return {
+      label: 'Stripe non configuré',
+      raw: normalized,
+      className: 'bg-amber-100 text-amber-700',
+    }
+  }
+
+  if (normalized === 'partial_error') {
+    return {
+      label: 'Résiliation partielle',
+      raw: normalized,
+      className: 'bg-orange-100 text-orange-700',
+    }
+  }
+
+  if (normalized.includes('failed') || normalized.includes('error')) {
+    return {
+      label: 'Erreur Stripe',
+      raw: normalized,
+      className: 'bg-rose-100 text-rose-700',
+    }
+  }
+
+  return {
+    label: 'Demande reçue',
+    raw: normalized,
+    className: 'bg-amber-100 text-amber-700',
+  }
+}
+
 export default function Resiliations({ token }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -29,9 +103,11 @@ export default function Resiliations({ token }) {
             return {
               id: item.id || `RES-${Math.random()}`,
               email: payload.email || '-',
-              status: 'Reçue',
+              stripeStatus: payload.stripe_status || 'received',
+              cancelledCount: Number(payload.stripe_cancelled_count || 0),
               date: formatDateTime(item.created_at),
               source: payload.source_path || '-',
+              stripeDetails: payload.stripe_details || null,
               applicant: {
                 firstName: sp.first_name || '-',
                 lastName: sp.last_name || '-',
@@ -77,7 +153,7 @@ export default function Resiliations({ token }) {
                 <tr>
                   <th className="px-4 py-3">Référence</th>
                   <th className="px-4 py-3">Email</th>
-                  <th className="px-4 py-3">Statut</th>
+                  <th className="px-4 py-3">Statut Stripe</th>
                   <th className="px-4 py-3">Date</th>
                   <th className="px-4 py-3">Action</th>
                 </tr>
@@ -90,27 +166,36 @@ export default function Resiliations({ token }) {
                     </td>
                   </tr>
                 ) : (
-                  rows.map((row) => (
-                    <tr key={row.id} className="border-t border-white/60">
-                      <td className="px-4 py-3 font-semibold text-ink">{row.id}</td>
-                      <td className="px-4 py-3">{row.email}</td>
-                      <td className="px-4 py-3">
-                        <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-600">
-                          {row.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-slate/60">{row.date}</td>
-                      <td className="px-4 py-3">
-                        <button
-                          className="rounded-xl bg-wave px-3 py-1 text-xs font-semibold text-white"
-                          type="button"
-                          onClick={() => setActiveRequest(row)}
-                        >
-                          Voir
-                        </button>
-                      </td>
-                    </tr>
-                  ))
+                  rows.map((row) => {
+                    const statusMeta = getStripeStatusMeta(row.stripeStatus)
+                    return (
+                      <tr key={row.id} className="border-t border-white/60">
+                        <td className="px-4 py-3 font-semibold text-ink">{row.id}</td>
+                        <td className="px-4 py-3">{row.email}</td>
+                        <td className="px-4 py-3">
+                          <span
+                            className={`rounded-full px-3 py-1 text-xs font-semibold ${statusMeta.className}`}
+                            title={`stripe_status: ${statusMeta.raw}`}
+                          >
+                            {statusMeta.label}
+                          </span>
+                          {row.cancelledCount > 0 ? (
+                            <span className="ml-2 text-xs font-semibold text-emerald-700">({row.cancelledCount})</span>
+                          ) : null}
+                        </td>
+                        <td className="px-4 py-3 text-slate/60">{row.date}</td>
+                        <td className="px-4 py-3">
+                          <button
+                            className="rounded-xl bg-wave px-3 py-1 text-xs font-semibold text-white"
+                            type="button"
+                            onClick={() => setActiveRequest(row)}
+                          >
+                            Voir
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  })
                 )}
               </tbody>
             </table>
@@ -138,6 +223,15 @@ export default function Resiliations({ token }) {
 
             <div className="mt-6 space-y-3 text-sm">
               <div className="rounded-2xl border border-white/60 bg-white/70 px-4 py-3">
+                <p className="text-xs uppercase tracking-[0.18em] text-slate/50">Statut Stripe</p>
+                <p className="mt-1 font-semibold text-ink">{getStripeStatusMeta(activeRequest.stripeStatus).label}</p>
+                <p className="mt-1 text-xs text-slate/60">Code: {getStripeStatusMeta(activeRequest.stripeStatus).raw}</p>
+              </div>
+              <div className="rounded-2xl border border-white/60 bg-white/70 px-4 py-3">
+                <p className="text-xs uppercase tracking-[0.18em] text-slate/50">Abonnements annulés</p>
+                <p className="mt-1 font-semibold text-ink">{activeRequest.cancelledCount}</p>
+              </div>
+              <div className="rounded-2xl border border-white/60 bg-white/70 px-4 py-3">
                 <p className="text-xs uppercase tracking-[0.18em] text-slate/50">Nom</p>
                 <p className="mt-1 font-semibold text-ink">{activeRequest.applicant.lastName}</p>
               </div>
@@ -153,6 +247,16 @@ export default function Resiliations({ token }) {
                 <p className="text-xs uppercase tracking-[0.18em] text-slate/50">Source</p>
                 <p className="mt-1 text-slate/70">{activeRequest.source}</p>
               </div>
+              {activeRequest.stripeDetails?.errors?.length ? (
+                <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3">
+                  <p className="text-xs uppercase tracking-[0.18em] text-rose-500">Erreurs Stripe</p>
+                  <ul className="mt-2 list-disc pl-5 text-xs text-rose-700">
+                    {activeRequest.stripeDetails.errors.map((e, i) => (
+                      <li key={`${activeRequest.id}-err-${i}`}>{e}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
