@@ -1,7 +1,7 @@
 const tickets = [
-  { id: 'SUP-204', subject: 'Remboursement demandé', status: 'Ouvert', owner: 'Noreen K.' },
+  { id: 'SUP-204', subject: 'Remboursement demandÃ©', status: 'Ouvert', owner: 'Noreen K.' },
   { id: 'SUP-205', subject: 'Erreur de facturation', status: 'En cours', owner: 'Alex P.' },
-  { id: 'SUP-206', subject: 'Kbis non reçu', status: 'Ouvert', owner: 'Dana L.' },
+  { id: 'SUP-206', subject: 'Kbis non reÃ§u', status: 'Ouvert', owner: 'Dana L.' },
 ]
 
 export default function Support() {
@@ -11,7 +11,7 @@ export default function Support() {
         <div>
           <p className="chip">Support</p>
           <h2 className="mt-3 font-display text-2xl font-semibold text-ink">Centre de support</h2>
-          <p className="mt-1 text-sm text-slate/60">Gestion des tickets et priorités.</p>
+          <p className="mt-1 text-sm text-slate/60">Gestion des tickets et prioritÃ©s.</p>
         </div>
         <button className="rounded-2xl bg-ink px-4 py-2 text-sm font-semibold text-white shadow-soft" type="button">
           Nouveau ticket
@@ -32,7 +32,7 @@ export default function Support() {
                   <span className="text-xs text-slate/60">{ticket.id}</span>
                 </div>
                 <div className="mt-2 flex items-center justify-between text-xs text-slate/60">
-                  <span>Assigné à {ticket.owner}</span>
+                  <span>AssignÃ© Ã  {ticket.owner}</span>
                   <span>{ticket.status}</span>
                 </div>
               </div>
@@ -41,7 +41,7 @@ export default function Support() {
         </div>
 
         <div className="glass-card px-6 py-6">
-          <h3 className="font-display text-lg font-semibold text-ink">Vue équipe</h3>
+          <h3 className="font-display text-lg font-semibold text-ink">Vue Ã©quipe</h3>
           <div className="mt-4 space-y-4 text-sm text-slate/70">
             <div className="flex items-center justify-between">
               <span>Noreen K.</span>
@@ -57,7 +57,7 @@ export default function Support() {
             </div>
           </div>
           <button className="mt-6 w-full rounded-2xl bg-wave px-4 py-2 text-sm font-semibold text-white" type="button">
-            Ouvrir la boîte de réception
+            Ouvrir la boÃ®te de rÃ©ception
           </button>
         </div>
       </section>

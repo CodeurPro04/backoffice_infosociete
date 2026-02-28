@@ -1,4 +1,4 @@
-export function formatDateTime(value) {
+﻿export function formatDateTime(value) {
   if (!value) return '-'
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
@@ -12,4 +12,3 @@ export function mapKbisStatusFromPayment(status) {
   if (normalized === 'failed' || normalized === 'canceled' || normalized === 'cancelled') return 'Refusée'
   return 'En attente'
 }
-

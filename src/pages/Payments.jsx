@@ -1,4 +1,4 @@
-const payments = [
+﻿const payments = [
   { id: 'TRX-10941', company: 'TotalEnergies SE', method: 'CB', status: 'Validé', amount: '1,49 €', date: '11/02/2026' },
   { id: 'TRX-10942', company: 'VINCI', method: 'CB', status: 'En attente', amount: '1,49 €', date: '11/02/2026' },
   { id: 'TRX-10943', company: 'AXA', method: 'CB', status: 'Refusé', amount: '1,49 €', date: '10/02/2026' },

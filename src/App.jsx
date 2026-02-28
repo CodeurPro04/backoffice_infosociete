@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import Dashboard from './pages/Dashboard.jsx'
 import Requests from './pages/Requests.jsx'
@@ -100,7 +100,7 @@ function App() {
         <aside className="glass-card hidden w-72 flex-col gap-8 px-6 py-7 lg:flex">
           <div>
             <p className="chip">Back Office</p>
-            <h1 className="mt-4 font-display text-2xl font-semibold text-ink">Infogref.goentrypro</h1>
+            <h1 className="mt-4 font-display text-2xl font-semibold text-ink">INFO-DOCSFLOW</h1>
             <p className="mt-2 text-sm text-slate/70">Pilotage des demandes, paiements et équipes.</p>
           </div>
 

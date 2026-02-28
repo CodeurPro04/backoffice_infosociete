@@ -2,6 +2,21 @@
 import { fetchAdminSubmissions } from '../api.js'
 import { formatDateTime, mapKbisStatusFromPayment } from '../utils.js'
 
+const TRIAL_DURATION_MS = 72 * 60 * 60 * 1000
+const TRIAL_AMOUNT = '1,49 €'
+const MONTHLY_AMOUNT = '49,99 €'
+
+function makeKey(siret, email) {
+  return `${(siret || '').toString().trim()}::${(email || '').toString().trim().toLowerCase()}`
+}
+
+function isTrialActive(createdAt) {
+  const start = Date.parse(createdAt || '')
+  if (Number.isNaN(start)) return false
+  const elapsed = Date.now() - start
+  return elapsed >= 0 && elapsed < TRIAL_DURATION_MS
+}
+
 export default function Requests({ token }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -16,10 +31,43 @@ export default function Requests({ token }) {
     fetchAdminSubmissions(token)
       .then((data) => {
         if (!mounted) return
+
         const submissions = Array.isArray(data?.submissions) ? data.submissions : []
         const payments = submissions.filter((item) => item.type === 'payment')
         const kbis = submissions.filter((item) => item.type === 'kbis_request')
-        const makeKey = (siret, email) => `${(siret || '').toString().trim()}::${(email || '').toString().trim().toLowerCase()}`
+        const signups = submissions.filter((item) => item.type === 'signup')
+        const cancellations = submissions.filter((item) => item.type === 'cancellation')
+
+        const signupByKey = new Map(
+          signups.map((item) => {
+            const p = item.payload || {}
+            return [makeKey(p.siret_or_siren, p.email), item]
+          }),
+        )
+
+        const hasCancellation = (siret, email) => {
+          const normalizedEmail = (email || '').toString().trim().toLowerCase()
+          const normalizedSiret = (siret || '').toString().trim()
+
+          return cancellations.some((item) => {
+            const cp = item.payload || {}
+            const cancellationEmail = (cp.email || '').toString().trim().toLowerCase()
+            const cancellationSiret = (cp.siret_or_siren || '').toString().trim()
+
+            if (!normalizedEmail || cancellationEmail !== normalizedEmail) return false
+            if (!normalizedSiret || !cancellationSiret) return true
+            return cancellationSiret === normalizedSiret
+          })
+        }
+
+        const computeAmount = ({ siret, email, fallbackCreatedAt }) => {
+          const signup = signupByKey.get(makeKey(siret, email))
+          const trialStart = signup?.created_at || fallbackCreatedAt || ''
+
+          if (isTrialActive(trialStart)) return TRIAL_AMOUNT
+          if (!hasCancellation(siret, email)) return MONTHLY_AMOUNT
+          return TRIAL_AMOUNT
+        }
 
         const rows = []
         const seen = new Set()
@@ -40,7 +88,7 @@ export default function Requests({ token }) {
             status: mapKbisStatusFromPayment(payment?.payload?.status),
             date: formatDateTime(item.created_at),
             createdAtRaw: item.created_at || '',
-            amount: payment?.payload?.amount ? `${payment.payload.amount} €` : '1,49 €',
+            amount: computeAmount({ siret: p.siret_or_siren, email: p.email, fallbackCreatedAt: item.created_at }),
             applicant: {
               firstName: p.first_name || '-',
               lastName: p.last_name || '-',
@@ -56,7 +104,7 @@ export default function Requests({ token }) {
           const p = item.payload || {}
           const key = makeKey(p.siret_or_siren, p.email)
 
-          // Ajoute aussi les paiements (validés ou en attente) sans ligne kbis existante
+          // Ajoute aussi les paiements (validés ou en attente) sans ligne kbis existante.
           if (seen.has(key)) return
 
           rows.push({
@@ -66,7 +114,7 @@ export default function Requests({ token }) {
             status: mapKbisStatusFromPayment(p.status),
             date: formatDateTime(item.created_at),
             createdAtRaw: item.created_at || '',
-            amount: p.amount ? `${p.amount} €` : '1,49 €',
+            amount: computeAmount({ siret: p.siret_or_siren, email: p.email, fallbackCreatedAt: item.created_at }),
             applicant: {
               firstName: p.first_name || '-',
               lastName: p.last_name || '-',
@@ -100,11 +148,14 @@ export default function Requests({ token }) {
     }
   }, [token])
 
-  const stats = useMemo(() => ({
-    total: requests.length,
-    done: requests.filter((r) => r.status === 'Validée').length,
-    waiting: requests.filter((r) => r.status === 'En attente').length,
-  }), [requests])
+  const stats = useMemo(
+    () => ({
+      total: requests.length,
+      done: requests.filter((r) => r.status === 'Validée').length,
+      waiting: requests.filter((r) => r.status === 'En attente').length,
+    }),
+    [requests],
+  )
 
   const closeModal = () => setActiveRequest(null)
 

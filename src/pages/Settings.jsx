@@ -3,9 +3,9 @@ export default function Settings() {
     <div className="space-y-8">
       <header className="glass-card flex flex-col gap-4 px-6 py-5 md:flex-row md:items-center md:justify-between">
         <div>
-          <p className="chip">Paramètres</p>
+          <p className="chip">ParamÃ¨tres</p>
           <h2 className="mt-3 font-display text-2xl font-semibold text-ink">Configuration</h2>
-          <p className="mt-1 text-sm text-slate/60">Ajustez les préférences et accès du back office.</p>
+          <p className="mt-1 text-sm text-slate/60">Ajustez les prÃ©fÃ©rences et accÃ¨s du back office.</p>
         </div>
         <button className="rounded-2xl bg-ink px-4 py-2 text-sm font-semibold text-white shadow-soft" type="button">
           Sauvegarder
@@ -14,9 +14,9 @@ export default function Settings() {
 
       <section className="glass-card grid gap-6 px-6 py-6 md:grid-cols-2">
         <div>
-          <h3 className="font-display text-lg font-semibold text-ink">Informations générales</h3>
+          <h3 className="font-display text-lg font-semibold text-ink">Informations gÃ©nÃ©rales</h3>
           <div className="mt-4 space-y-3 text-sm">
-            {['Nom de la société', 'Email support', 'Téléphone support'].map((label) => (
+            {['Nom de la sociÃ©tÃ©', 'Email support', 'TÃ©lÃ©phone support'].map((label) => (
               <label key={label} className="block">
                 <span className="text-xs uppercase tracking-[0.18em] text-slate/50">{label}</span>
                 <input className="mt-2 w-full rounded-2xl border border-white/60 bg-white/80 px-4 py-2" />

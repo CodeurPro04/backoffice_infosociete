@@ -1,6 +1,28 @@
 ﻿import { useEffect, useMemo, useState } from 'react'
 import { fetchAdminSubmissions } from '../api.js'
 
+const TRIAL_DURATION_MS = 72 * 60 * 60 * 1000
+const DEFAULT_MONTHLY_AMOUNT = '49,99 €'
+
+function formatEuroAmount(value) {
+  if (value === null || value === undefined || value === '') return DEFAULT_MONTHLY_AMOUNT
+
+  const numeric = Number(String(value).replace(',', '.'))
+  if (!Number.isFinite(numeric)) return DEFAULT_MONTHLY_AMOUNT
+
+  return `${numeric.toLocaleString('fr-FR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })} €`
+}
+
+function isTrialActive(createdAt) {
+  const start = new Date(createdAt).getTime()
+  if (!Number.isFinite(start)) return false
+  const elapsed = Date.now() - start
+  return elapsed >= 0 && elapsed < TRIAL_DURATION_MS
+}
+
 export default function Clients({ token }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -39,11 +61,13 @@ export default function Clients({ token }) {
               )
             })
 
+            const monthlyAmount = formatEuroAmount(p.monthly_amount ?? p.subscription_amount ?? p.plan_amount)
+
             return {
               id: item.id,
               name: p.company_name || '-',
               email: p.email || '-',
-              plan: 'Essai',
+              plan: isTrialActive(item.created_at) ? 'Essai (72h)' : `Plan mensuel (${monthlyAmount})`,
               status: 'Actif',
               paymentStatus: paymentLabel(linkedPayment?.payload?.status),
               profile: p.profile || '-',

@@ -2,6 +2,17 @@
 import { fetchAdminSubmissions } from '../api.js'
 import { formatDateTime, mapKbisStatusFromPayment } from '../utils.js'
 
+const TRIAL_DURATION_MS = 72 * 60 * 60 * 1000
+const TRIAL_AMOUNT = '1,49 €'
+const MONTHLY_AMOUNT = '49,99 €'
+
+function isTrialActive(createdAt) {
+  const start = new Date(createdAt).getTime()
+  if (!Number.isFinite(start)) return false
+  const elapsed = Date.now() - start
+  return elapsed >= 0 && elapsed < TRIAL_DURATION_MS
+}
+
 export default function Dashboard({ token }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -33,28 +44,55 @@ export default function Dashboard({ token }) {
   const stats = useMemo(() => {
     const totalKbis = items.filter((item) => item.type === 'kbis_request').length
     const totalPayments = items.filter((item) => item.type === 'payment' && (item.payload?.status || '').toLowerCase() === 'succeeded').length
+    const totalCancellations = items.filter((item) => item.type === 'cancellation').length
+
     return [
       { label: 'Demandes Kbis', value: totalKbis.toString() },
       { label: 'Paiements validés', value: totalPayments.toString() },
+      { label: 'Demandes résiliation', value: totalCancellations.toString() },
     ]
   }, [items])
 
   const recentRows = useMemo(() => {
     const payments = items.filter((item) => item.type === 'payment')
+    const signups = items.filter((item) => item.type === 'signup')
+    const cancellations = items.filter((item) => item.type === 'cancellation')
     const kbis = items.filter((item) => item.type === 'kbis_request').slice(0, 8)
 
     return kbis.map((request) => {
       const payload = request.payload || {}
+      const email = (payload.email || '').toLowerCase()
+      const siren = payload.siret_or_siren || ''
+
       const linkedPayment = payments.find((payment) => {
         const pp = payment.payload || {}
-        return pp.siret_or_siren === payload.siret_or_siren && pp.email === payload.email
+        return pp.siret_or_siren === siren && (pp.email || '').toLowerCase() === email
       })
 
+      const linkedSignup = signups.find((signup) => {
+        const sp = signup.payload || {}
+        return sp.siret_or_siren === siren && (sp.email || '').toLowerCase() === email
+      })
+
+      const hasCancellation = cancellations.some((cancellation) => {
+        const cp = cancellation.payload || {}
+        const cancellationEmail = (cp.email || '').toLowerCase()
+        const cancellationSiren = cp.siret_or_siren || ''
+
+        if (!cancellationEmail || cancellationEmail !== email) return false
+        if (!siren || !cancellationSiren) return true
+        return cancellationSiren === siren
+      })
+
+      const trialStart = linkedSignup?.created_at || request.created_at
+      const amount = isTrialActive(trialStart) || hasCancellation ? TRIAL_AMOUNT : MONTHLY_AMOUNT
+
       return {
-        id: payload.siret_or_siren || '-',
+        id: siren || '-',
         company: payload.company_name || '-',
+        email: payload.email || '-',
         status: mapKbisStatusFromPayment(linkedPayment?.payload?.status),
-        amount: linkedPayment?.payload?.amount ? `${linkedPayment.payload.amount} €` : '1,49 €',
+        amount,
         date: formatDateTime(request.created_at),
       }
     })
@@ -70,7 +108,7 @@ export default function Dashboard({ token }) {
         </div>
       </header>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-2">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {stats.map((item) => (
           <div key={item.label} className="glass-card px-5 py-4">
             <p className="text-xs uppercase tracking-[0.2em] text-slate/50">{item.label}</p>
@@ -113,7 +151,10 @@ export default function Dashboard({ token }) {
                     recentRows.map((row) => (
                       <tr key={`${row.id}-${row.date}`} className="border-t border-white/60">
                         <td className="px-4 py-3 font-semibold text-ink">{row.id}</td>
-                        <td className="px-4 py-3">{row.company}</td>
+                        <td className="px-4 py-3">
+                          <p>{row.company}</p>
+                          <p className="text-xs text-slate/60">{row.email}</p>
+                        </td>
                         <td className="px-4 py-3">
                           <span
                             className={`rounded-full px-3 py-1 text-xs font-semibold ${

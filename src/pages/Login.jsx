@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { adminLogin } from '../api.js'
 
@@ -40,7 +40,7 @@ export default function Login({ onLoginSuccess }) {
         <div className="glass-card grid w-full max-w-4xl gap-8 px-8 py-10 md:grid-cols-[1.1fr_0.9fr]">
           <div className="space-y-6">
             <p className="chip">Connexion</p>
-            <h1 className="font-display text-3xl font-semibold text-ink">Back Office Infogref.goentrypro</h1>
+            <h1 className="font-display text-3xl font-semibold text-ink">Back Office INFO-DOCSFLOW</h1>
             <p className="text-sm text-slate/60">
               Accès sécurisé pour l'équipe administrative. Veuillez renseigner vos identifiants.
             </p>

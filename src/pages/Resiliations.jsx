@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { fetchAdminSubmissions } from '../api.js'
 import { formatDateTime } from '../utils.js'
 
